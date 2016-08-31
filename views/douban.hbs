@@ -1,0 +1,179 @@
+{{#section 'head'}}
+  <link rel="stylesheet" type="text/css" href="/css/spider.css"/>
+  <script src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+  <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+{{/section}}
+
+<div class="info-wrp">
+  <h3>豆瓣小爬虫</h3>
+  <form action="/douban" method="post" enctype="application/x-www-form-urlencoded">
+    <span class="input-wrp">城市：
+      <label><input type="radio" name="city" class="input-radio" value="北京"/>北京</label>
+      <label><input type="radio" name="city" class="input-radio" value="深圳" checked/>深圳</label>
+    </span>
+        <span class="input-wrp">包含：<input type="text" name="includeWords" class="input" value="南山"
+                                          placeholder="关键词以逗号分隔"/></span>
+        <span class="input-wrp area">排除： <textarea class="input input-area"
+                                                   name="excludeWords">限妹子，限女，2[6-9]\d{2}，福田，罗湖，坂田，龙岗</textarea></span>
+    <input type="submit" class="btn" value="启动爬虫"/>
+  </form>
+  {{#unless results}}
+    <p class="tips-wrp">
+      以上均为标题的关键词筛选，每个词之间使用逗号区分，由于标题填写比较随意，不建议使用包含关键词进行筛选。PS：价钱筛选使用正则表达式，3\d{3}=3***，2[5-9]\d{2}=2500以上,以此类推。</p>
+  {{else}}
+    <ul class="list">
+      {{#each results}}
+        <li class="list-li"><a href={{href}} target="_blank">更新：{{lastTime}} >> {{title}}</a></li>
+      {{/each}}
+    </ul>
+  {{/unless}}
+</div>
+
+{{#section 'foot'}}
+  <script>
+    $(document).ready(function () {
+      // wechat sdk 签名
+      var appURL = location.href.split('#')[0];
+      var settings = {
+        "async": true,
+        "crossDomain": true,
+        "url": "http://" + location.host + "/wxsign?url=" + encodeURIComponent(appURL),
+        "method": "POST",
+        "headers": {
+          "cache-control": "no-cache"
+        }
+      };
+      $.ajax(settings).done(function (response) {
+        wx.config({
+          debug: false,
+          appId: response.appId,
+          timestamp: response.timestamp,
+          nonceStr: response.nonceStr,
+          signature: response.signature,
+          jsApiList: [
+            'checkJsApi',
+            'onMenuShareTimeline',
+            'onMenuShareAppMessage',
+            'onMenuShareQQ'
+          ]
+        });
+        wx.error(function (res) {
+          console.log(res.errMsg);
+        });
+      });
+
+      //     var url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxb4ed102592550f94&redirect_uri=' + encodeURIComponent(location.href)
+      //          + '&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect';
+      var url = location.href;
+      setShare(url);
+
+      $('.input-radio').click(function (e) {
+        var kw = '', exkw = '';
+        switch (this.value) {
+          case '北京':
+            kw = '双井';
+            exkw = '蛋壳，自如，乐乎公寓，床位，35\d{2}';
+            break;
+          case '深圳':
+            kw = '南山';
+            exkw = '限妹子，限女，2[6-9]\d{2}，3\d{3}，蛋壳，自如，友邻公寓，福田，罗湖，坂田，龙岗';
+            break;
+          default:
+            return false;
+        }
+        $('[name=includeWords]').attr('value', kw);
+        $('[name=excludeWords]').attr('value', exkw);
+      });
+
+      // location onchange 调用微信API
+      function setShare(linkURL) {
+        wx.ready(function () {
+          // 分享给好友
+          wx.onMenuShareAppMessage({
+            title: '豆瓣租房小爬虫',
+            desc: '爬取北京深圳两地的豆瓣租房小组并筛选出合适的帖子。',
+            link: linkURL,
+            imgUrl: "http://" + location.host + '/images/zoro.jpg',
+            success: function (res) {
+              console.log('已分享');
+            },
+            cancel: function (res) {
+              console.log('已取消');
+            },
+            fail: function (res) {
+              console.warn(JSON.stringify(res));
+            }
+          });
+
+          // 分享到朋友圈
+          wx.onMenuShareTimeline({
+            title: '豆瓣租房小爬虫',
+            link: linkURL,
+            imgUrl: "http://" + location.host + '/images/zoro.jpg',
+            success: function (res) {
+              console.log('已分享');
+            },
+            cancel: function (res) {
+              console.log('已取消');
+            },
+            fail: function (res) {
+              console.warn(JSON.stringify(res));
+            }
+          });
+
+          // 分享给QQ好友
+          wx.onMenuShareQQ({
+            title: '豆瓣租房小爬虫',
+            desc: '爬取北京深圳两地的豆瓣租房小组并筛选出合适的帖子。',
+            link: linkURL,
+            imgUrl: "http://" + location.host + '/images/zoro.jpg',
+            success: function (res) {
+              console.log('已分享');
+            },
+            cancel: function (res) {
+              console.log('已取消');
+            },
+            fail: function (res) {
+              console.warn(JSON.stringify(res));
+            }
+          });
+
+          // 分享到QQ空间
+          wx.onMenuShareQZone({
+            title: '豆瓣租房小爬虫',
+            desc: '爬取北京深圳两地的豆瓣租房小组并筛选出合适的帖子。',
+            link: linkURL,
+            imgUrl: "http://" + location.host + '/images/zoro.jpg',
+            success: function (res) {
+              console.log('已分享');
+            },
+            cancel: function (res) {
+              console.log('已取消');
+            },
+            fail: function (res) {
+              console.warn(JSON.stringify(res));
+            }
+          });
+
+          // 分享到微博
+          wx.onMenuShareWeibo({
+            title: '豆瓣租房小爬虫',
+            desc: '爬取北京深圳两地的豆瓣租房小组并筛选出合适的帖子。',
+            link: linkURL,
+            imgUrl: "http://" + location.host + '/images/zoro.jpg',
+            success: function (res) {
+              console.log('分享到朋友圈成功！');
+            },
+            cancel: function (res) {
+              // 用户取消分享后执行的回调函数
+              console.log('取消分享！');
+            },
+            fail: function (res) {
+              console.warn(JSON.stringify(res));
+            }
+          });
+        });
+      }
+    });
+  </script>
+{{/section}}

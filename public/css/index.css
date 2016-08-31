@@ -1,0 +1,204 @@
+/* common CSS start */
+
+html {
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    line-height: 1.6;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body, h1, h2, h3, h4, h5, h6, p, ol, ul, li {
+    margin: 0;
+    padding: 0;
+}
+
+a img {
+    border: 0;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* common CSS end */
+
+.main-wrp {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.main {
+    margin: 10px 15px;
+}
+
+.prt-li {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ffa5a5;
+}
+
+.prt {
+    border-bottom: 2px dashed #ccc;
+    list-style-type: none;
+    padding: 20px 0;
+}
+
+.prt-header {
+    position: relative;
+}
+
+.tag {
+    padding: 2px 5px;
+    border-radius: 3px;
+    display: inline-block;
+    vertical-align: middle;
+    color: #fff;
+    font-size: 0.85em;
+}
+
+.yellow {
+    background: #f0db4f;
+    color: #333 !important;
+}
+
+.green {
+    background: #80bd01;
+}
+
+.blue {
+    background: #418cff;
+}
+
+.prt-ft-tag {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    color: #888;
+}
+
+.prt-intro {
+    padding: 10px 0;
+}
+
+.intro-pts {
+    margin-left: 16px;
+}
+
+.prt-thumb {
+    max-width: 80%;
+    display: block;
+    margin: 0 auto;
+}
+
+.prt:last-of-type {
+    border: none;
+}
+
+.myinfo {
+    border-bottom: 1px solid #d6d6d6;
+    line-height: 1.5;
+    padding: 15px;
+    position: relative;
+}
+
+.myinfo-name {
+    font-size: 1.5em;
+}
+
+.myinfo-title {
+    padding-left: 5px;
+    color: #888;
+}
+
+.myinfo-address {
+}
+
+.address {
+    display: block;
+}
+
+.blog {
+    margin-top: 5px;
+}
+
+.link-btn {
+    box-sizing: border-box;
+    font-style: normal;
+    color: #000000;
+    border-radius: 5px;
+    height: 23px;
+    line-height: 22px;
+    padding: 0 5px;
+    font-size: 0.75em;
+    margin-right: 4px;
+    display: inline-block;
+    vertical-align: middle;
+    background: #a1e9ff;
+    background: -webkit-linear-gradient(#c8f2ff, #68bdf2);
+    background: linear-gradient(#c8f2ff, #68bdf2);
+}
+
+.myinfo-thumb {
+    position: absolute;
+    right: 15px;
+    top: 0;
+    bottom: 0;
+    height: 85px;
+    margin: auto;
+}
+
+.github {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.link-img {
+    height: 20px;
+    margin-top: 2px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.main-title {
+    font-size: 1.625em;
+    font-family: 'Microsoft JhengHei', 'Microsoft YaHei', 'STHeiti SC', 'SimHei';
+    text-align: center;
+    font-weight: normal;
+}
+
+footer {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+@media only screen and (min-width: 600px) {
+    .prt-detail {
+        margin-right: 200px;
+        font-size: 0;
+        letter-spacing: -4px;
+    }
+
+    .prt-thumb {
+        display: inline-block;
+        width: 200px;
+        margin-right: -200px;
+        /* margin-left: 8px; */
+        vertical-align: top;
+        font-size: 16px;
+        letter-spacing: normal;
+    }
+
+    .prt-intro {
+        display: inline-block;
+        box-sizing: border-box;
+        width: 100%;
+        padding-right: 15px;
+        vertical-align: top;
+        font-size: 16px;
+        letter-spacing: normal;
+    }
+}

@@ -1,0 +1,343 @@
+{{#section 'head'}}
+    <link href="/css/contacts.css" rel="stylesheet" type="text/css"/>
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <script src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+    <script src="/js/jquery.qrcode.min.js"></script>
+{{/section}}
+
+<div id="qrcode-wrp" class="mordal-layer">
+    <img id="cd-img" class="card-img" src=""/>
+    <div class="handle-wrp">
+        <h4 class="hint">长按二维码识别，一键保存到手机通讯录</h4>
+        <h4 class="hint">点微信右上角分享，马上发送给朋友</h4>
+        <button id="creatMine" class="ct-btn">制作我的二维码名片</button>
+    </div>
+
+</div>
+<div class="base-layer">
+    <ul class="cd">
+        <li class="cd-item"><span>名字</span><input type="text" id="card-name" class="cd-input" value=""
+                                                  placeholder="请输入姓名(必填项)"/></li>
+        <li class="cd-item"><span>手机</span><input type="text" id="card-mobile" class="cd-input" value=""
+                                                  placeholder="请输入手机号(必填项)"/></li>
+        <li class="cd-item"><span>公司</span><input type="text" id="card-org" class="cd-input" value=""/></li>
+        <li class="cd-item"><span>主页</span><input type="url" id="card-web" class="cd-input" value=""/></li>
+        <li class="cd-item"><span>地址</span><input type="text" id="card-adr" class="cd-input" value=""/></li>
+        <li class="cd-item"><span>邮箱</span><input type="email" id="card-email" class="cd-input" value=""/></li>
+        <li class="cd-item"><span>电话</span><input type="tel" id="card-tel" class="cd-input" value=""/></li>
+        <li class="cd-item"><span>职位</span><input type="text" id="card-title" class="cd-input" value=""/></li>
+    </ul>
+    <div class="ct">
+        <button id="creatQrcode" class="ct-btn">生成2维码名片</button>
+    </div>
+</div>
+{{#section 'foot'}}
+    <script>
+        var app = (function () {
+            function initPage() {
+                var data = getQuery();
+                if (!data) {
+                    $('.mordal-layer').hide();
+                    $('.base-layer').show();
+
+                    var url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxb4ed102592550f94&redirect_uri=' + encodeURIComponent(location.href.split('#')[0])
+                            + '&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect';
+                    setShare(url);
+
+                } else {
+                    $('.mordal-layer').show();
+                    $('.base-layer').hide();
+                    console.info('get data, show card', data);
+                    newCard(data);
+                }
+            }
+
+            function bindEvent() {
+                $('#creatMine').click(function (e) {
+                    $('.mordal-layer').hide();
+                    $('.base-layer').show();
+                    location.href = location.href.split('#')[0] + '#!';
+                    var url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxb4ed102592550f94&redirect_uri=' + encodeURIComponent(location.href)
+                            + '&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect';
+                    setShare(url);
+                });
+
+                $('#creatQrcode').click(function (e) {
+                    var person = {};
+
+                    person.name = $('#card-name').val();
+                    person.mobile = $('#card-mobile').val();
+                    person.org = $('#card-org').val();
+                    person.web = $('#card-web').val();
+                    person.adr = $('#card-adr').val();
+                    person.email = $('#card-email').val();
+                    person.tel = $('#card-tel').val();
+                    person.title = $('#card-title').val();
+
+                    if (!person.name || !person.mobile) {
+                        alert('姓名和手机号都是必填项哦~');
+                        return false;
+                    }
+                    newCard(person);
+                });
+            }
+
+            // location onchange 调用微信API
+            function setShare(linkURL) {
+
+                wx.ready(function () {
+                    // 分享给好友
+                    wx.onMenuShareAppMessage({
+                        title: '我的二维码名片',
+                        desc: '打开链接长按二维码识别，将我的名片一键存到手机通讯录，还可以制作你的专属二维码名片分享给朋友们哦~',
+                        link: linkURL,
+                        imgUrl: "http://" + location.host + '/images/thumb.png',
+                        success: function (res) {
+                            console.log('已分享');
+                        },
+                        cancel: function (res) {
+                            console.log('已取消');
+                        },
+                        fail: function (res) {
+                            console.warn(JSON.stringify(res));
+                        }
+                    });
+
+                    // 分享到朋友圈
+                    wx.onMenuShareTimeline({
+                        title: '我的二维码名片',
+                        link: linkURL,
+                        imgUrl: "http://" + location.host + '/images/thumb.png',
+                        success: function (res) {
+                            console.log('已分享');
+                        },
+                        cancel: function (res) {
+                            console.log('已取消');
+                        },
+                        fail: function (res) {
+                            console.warn(JSON.stringify(res));
+                        }
+                    });
+
+                    // 分享给QQ好友
+                    wx.onMenuShareQQ({
+                        title: '我的二维码名片',
+                        desc: '打开链接长按二维码识别，将我的名片一键存到手机通讯录，还可以制作你的专属二维码名片分享给朋友们哦~',
+                        link: linkURL,
+                        imgUrl: "http://" + location.host + '/images/thumb.png',
+                        success: function (res) {
+                            console.log('已分享');
+                        },
+                        cancel: function (res) {
+                            console.log('已取消');
+                        },
+                        fail: function (res) {
+                            console.warn(JSON.stringify(res));
+                        }
+                    });
+
+                    // 分享到QQ空间
+                    wx.onMenuShareQZone({
+                        title: '我的二维码名片',
+                        desc: '打开链接长按二维码识别，一键将我的名片存到手机通讯录，还可以制作你的专属二维码名片分享给朋友们哦~',
+                        link: linkURL,
+                        imgUrl: "http://" + location.host + '/images/thumb.png',
+                        success: function (res) {
+                            console.log('已分享');
+                        },
+                        cancel: function (res) {
+                            console.log('已取消');
+                        },
+                        fail: function (res) {
+                            console.warn(JSON.stringify(res));
+                        }
+                    });
+
+                    // 分享到微博
+                    wx.onMenuShareWeibo({
+                        title: '我的二维码名片',
+                        desc: '打开链接长按二维码识别，一键将我的名片存到手机通讯录，还可以制作你的专属二维码名片分享给朋友们哦~',
+                        link: linkURL,
+                        imgUrl: "http://" + location.host + '/images/thumb.png',
+                        success: function (res) {
+                            console.log('分享到朋友圈成功！');
+                        },
+                        cancel: function (res) {
+                            // 用户取消分享后执行的回调函数
+                            console.log('取消分享！');
+                        },
+                        fail: function (res) {
+                            console.warn(JSON.stringify(res));
+                        }
+                    });
+                });
+            }
+
+            function getQuery() {
+                var qs = (location.hash.length > 0 ? location.hash.substring(2) : "");
+                console.log('====== url qs data =======');
+                console.log(qs);
+                if (!qs) {
+                    return false;
+                }
+
+                var args = {},
+                        items = qs.length ? qs.split('&') : [],
+                        item = null,
+                        name = null,
+                        value = null,
+                        i = 0,
+                        len = items.length;
+
+                for (i = 0; i < len; i++) {
+                    item = items[i].split('=');
+                    name = decodeURIComponent(item[0]);
+                    value = decodeURIComponent(item[1]);
+                    if (name.length) {
+                        args[name] = value;
+                    }
+                }
+                return args;
+            }
+
+            function newCard(person) {
+                var txt = toVcf(person);
+                console.log("========== txt ============");
+                console.log(txt);
+
+                $('canvas').remove();
+                $('#qrcode-wrp').show().qrcode({
+                    text: txt
+                });
+
+                //////
+                var c = $('canvas')[0],
+                        height = c.height,
+                        width = c.width,
+                        ctx = c.getContext("2d"),
+                        img = new Image();
+
+                img.src = '/images/zoro.jpg';
+
+                img.onload = function () {
+                    ctx.drawImage(this, height / 2 - 36, width / 2 - 36, 72, 72);
+                    $('#cd-img').attr("src", c.toDataURL("image/png"));
+
+                    location.href = location.href.split('#')[0] + '#!' + toQueryURL(person);
+                    var url = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxb4ed102592550f94&redirect_uri=' + encodeURIComponent(location.href)
+                            + '&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect';
+                    setShare(url);
+                    console.info("shareURL : ", url);
+
+                };
+            }
+
+            function toUtf8(str) {
+                var out, i, len, c;
+                out = "";
+                if (!str) {
+                    return false;
+                }
+                len = str.length;
+                for (i = 0; i < len; i++) {
+                    c = str.charCodeAt(i);
+                    if ((c >= 0x0001) && (c <= 0x007F)) {
+                        out += str.charAt(i);
+                    } else if (c > 0x07FF) {
+                        out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                        out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
+                        out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+                    } else {
+                        out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
+                        out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+                    }
+                }
+                return out;
+            }
+
+            /***
+             * 转换成Vcf对象
+             * @params opt{}
+             * @return vcf{}，cvf.data为所需字符串
+             *
+             * VCF数据格式
+             * BEGIN:VCARD
+             * FN: name
+             * TEL;CELL;VOICE:15201280000
+             * TEL;WORK;VOICE:010-62100000
+             * EMAIL;PREF;INTERNET: qieguo.chow@gmail.com
+             * URL: http://www.wex5.com/
+             * orG: 起步科技
+             * TITLE: 前端码农
+             * ADR;WORK:北京市朝阳区东三环十里河高和蓝峰大厦;
+             * X-WeChat:000000
+             */
+            function toVcf(opts) {
+                var vcf = {};
+                vcf.name = opts.name && 'N:' + toUtf8(opts.name) + '\r\n';
+                vcf.mobile = opts.mobile && 'TEL;CELL;VOICE:' + toUtf8(opts.mobile) + '\r\n';
+                vcf.org = opts.org && 'ORG:' + toUtf8(opts.org) + '\r\n';
+                vcf.web = opts.web && 'URL;WORK:' + toUtf8(opts.web) + '\r\n';
+                vcf.adr = opts.adr && 'ADR;WORK:' + toUtf8(opts.adr) + ';\r\n';
+                vcf.email = opts.email && 'EMAIL;PREF;INTERNET:' + toUtf8(opts.email) + '\r\n';
+                vcf.tel = opts.tel && 'TEL;WORK;VOICE:' + toUtf8(opts.tel) + '\r\n';
+                vcf.title = opts.title && 'TITLE:' + toUtf8(opts.title) + '\r\n';
+                return 'BEGIN:VCARD\r\n' + vcf.name + vcf.mobile + vcf.org + vcf.web + vcf.adr + vcf.email + vcf.tel + vcf.title + 'END:VCARD'
+            }
+
+            function toQueryURL(opts) {
+                var uri = '';
+                for (var key in opts) {
+                    if (opts[key]) {
+                        uri += encodeURIComponent(key) + '=' + encodeURIComponent(opts[key]) + '&';
+                    }
+                }
+                return uri.substring(0, uri.length - 1);
+            }
+            return {
+                init: function () {
+                    initPage();
+                    bindEvent();
+                }
+            };
+        })();
+
+        $(document).ready(function () {
+
+            // wechat sdk 签名
+            var appURL = location.href.split('#')[0];
+            var settings = {
+                "async": true,
+                "crossDomain": true,
+                "url": "http://" + location.host + "/wxsign?url=" + encodeURIComponent(appURL),
+                "method": "POST",
+                "headers": {
+                    "cache-control": "no-cache"
+                }
+            };
+
+            $.ajax(settings).done(function (response) {
+                console.info('post response', response);
+                wx.config({
+                    debug: false,
+                    appId: response.appId,
+                    timestamp: response.timestamp,
+                    nonceStr: response.nonceStr,
+                    signature: response.signature,
+                    jsApiList: [
+                        'checkJsApi',
+                        'onMenuShareTimeline',
+                        'onMenuShareAppMessage',
+                        'onMenuShareQQ',
+                        'scanQRCode'
+                    ]
+                });
+                wx.error(function (res) {
+                    console.log(res.errMsg);
+                });
+                // location.href = location.href.split('#')[0] + '#!name=%E5%91%A8%E6%B0%B8%E4%BD%B3&mobile=15818864118&org=%E8%B5%B7%E6%AD%A5%E7%A7%91%E6%8A%80&web=http%3A%2F%2Fwww.cnblogs.com%2Fqieguo%2F&adr=%E5%8C%97%E4%BA%AC&email=qieguo.chow%40gmail.com&title=%E5%89%8D%E7%AB%AF';
+                app.init();
+            });
+        });
+    </script>
+{{/section}}
