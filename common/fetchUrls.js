@@ -6,87 +6,70 @@
 
 var request = require("request");
 var cheerio = require("cheerio");
-var eventproxy = require('eventproxy');
-var ep = new eventproxy();
 var async = require('async');
+var userAgent = require('./spider.config.js').userAgent.win;
 
-var pageNum = 2, szRequestOpts = [], bjRequestOpts = [];
-var szUrls = [
-  'https://www.douban.com/group/106955/discussion',
-  //'https://www.douban.com/group/nanshanzufang/discussion'
-];
-var bjUrls = [
-  'https://www.douban.com/group/fangzi/discussion',
-  'https://www.douban.com/group/26926/discussion',
-  'https://www.douban.com/group/beijingzufang/discussion',
-  'https://www.douban.com/group/279962/discussion'
-];
-
-initRequestOpt(szUrls, szRequestOpts, pageNum);
-initRequestOpt(bjUrls, bjRequestOpts, pageNum);
-
-
-// 爬豆瓣
-function fetchUrls() {
-
-  var requestOpts = szRequestOpts;
-
-  ep.after('topic_titles', pageNum, function (topics) {
-    // topics 是个数组，包含了 n次 ep.emit(event, cbData) 中的cbData所组成的数组
-    // 由于在event中已经是数组，所以这里得到的是数组的数组，下面处理可以摊平它
-    var results = topics.reduce(function (pre, next) {
-      return pre.concat(next);
+// 爬帖子title、href、lastmodified
+var concurrencyCount = 0;
+function fetchUrl(opt, callback, ago) {
+  concurrencyCount++;
+  console.log('现在的并发数是', concurrencyCount, '，正在抓取的是', opt.url);
+  ago = ago || 604800000;      // 604800000 = 7 days
+  request(opt, function (error, response, body) {
+    if (error) {
+      throw new Error(error);
+    }
+    var $ = cheerio.load(body, {
+      normalizeWhitespace: true,
+      decodeEntities: false
     });
-    console.log('result: ', results);
-  });
-
-  requestOpts.forEach(function (opt) {
-    request(opt, function (error, response, body) {
-      if (error) {
-        throw new Error(error);
+    var items = [];
+    var year = new Date().getFullYear();
+    var isStop = false;
+    $('.olt tr').slice(1).each(function (index, el) {
+      var lastTime = $('.time', el).text();
+      if (Date.now() - new Date(year + '-' + lastTime) > ago) {
+        isStop = true;
+        return false;
       }
-      var $ = cheerio.load(body, {
-        normalizeWhitespace: true,
-        decodeEntities: false
+      var $item = $('.title > a', el);
+      items.push({
+        title: $item.attr('title'),
+        href: $item.attr('href'),
+        lastTime: lastTime
       });
-      var items = [];
-      $('.olt tr').slice(1).each(function (index, el) {
-        var $item = $('.title > a', el);
-        items.push({
-          title: $item.attr('title'),
-          href: $item.attr('href'),
-          lastTime: $('.time', el).text()
-        });
-      });
-      // 发布单个请求完成事件并返回结果（数组）
-      ep.emit('topic_titles', items);
     });
+    if (isStop) {
+      callback('error: too long ago', items);
+    } else {
+      concurrencyCount--;
+      console.log('fetch url success,', opt.url);
+      callback(null, items);
+    }
   });
-
 }
 
 /**
  * 请求参数初始化
  * @param: urls:请求的url、 opts：请求header参数， num：爬取的页数
  */
-function initRequestOpt(urls, opts, num) {
+function initRequestOpt(urls, num) {
+  var opts = [];
   urls.forEach(function (url) {
     for (var i = 0; i < num; i++) {
       opts.push({
         method: 'GET',
-        url: url,
-        qs: {start: (i * 25).toString()},
+        url: url + '?start=' + (i * 25).toString(),
         headers: {
           'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
           'cache-control': 'no-cache',
           'http-only': true,
-          //'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-          'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36'
-          // 'cookie': 'll="118282"; bid=jqK8RjiBY0Q; dbcl2="146135697:9T1g8om8WS0"; ct=y; ck=ze-Q; _vwo_uuid_v2=79FA0A89061788999AD5163733A97412|d93e1ccdf54b937f63c9750d7c8e90c2; _pk_ref.100001.8cb4=%5B%22%22%2C%22%22%2C1472368010%2C%22https%3A%2F%2Fwww.baidu.com%2Flink%3Furl%3DoliRXA7g38gH6-Ut0rYcrUyDMCX0qL5O99qP9KAN4jm%26wd%3D%26eqid%3Dd48d7e270004c4d40000000657bef603%22%5D; ap=1; push_noty_num=0; push_doumail_num=0; _pk_id.100001.8cb4=0260c3428e3bf70c.1472132617.4.1472370032.1472362347.; __utma=30149280.66548113.1472132621.1472361826.1472368011.5; __utmc=30149280; __utmz=30149280.1472132621.2.2.utmcsr=baidu|utmccn=(organic)|utmcmd=organic; __utmv=30149280.14613'
+          'user-agent': userAgent
         }
       });
     }
   });
+  return opts;
 }
 
 /**
@@ -113,6 +96,26 @@ function checkExcludeWords(str, words) {
   return !result;
 }
 
-fetchUrls();
-
-//module.exports = fetchUrls;
+/**
+ * 控制请求的并发为5，完成数据爬取
+ * @params: baseUrls:[], num: 请求数, daysAgo: 在此之前的数据不爬
+ * @return: 爬取的结果
+ * */
+module.exports = function (baseUrls, num, cb, daysAgo) {
+  var opts = initRequestOpt(baseUrls, num);
+  var ago = daysAgo && daysAgo * 1000 * 60 * 60 * 24;
+  async.mapLimit(opts, 5, function (opt, callback) {
+    fetchUrl(opt, callback, ago);
+  }, function (err, results) {
+    results = results.reduce(function (pre, next) {
+      return pre.concat(next);
+    });
+    if (err) {
+      console.log('fetchUrl Error: ', err);
+      return cb(err, results);
+    }
+    console.log(results);
+    console.log('finish! data number:  ', results.length);
+    cb(null, results);
+  });
+};

@@ -23,44 +23,10 @@ var Topic = models.Topic;
 
 // url: 'https://www.douban.com/group/topic/90144149/',
 
-function fetchDetail(opt) {
-
-  var options = {
-    method: 'GET',
-    url: opt.url,
-    headers: {
-      'cache-control': 'no-cache',
-      'http-only': true,
-      'user-agent': userAgent
-    }
-  };
-
-  opt.headers && (options.headers = opt.headers);
-
-  request(options, function (error, response, body) {
-    if (error) {
-      throw new Error(error);
-    }
-    var $ = cheerio.load(body, {
-      normalizeWhitespace: true,
-      decodeEntities: false
-    });
-
-    getData($, function (err) {
-      if (err) {
-        console.error('Save fail!');
-        return;
-      } else {
-        console.log('Save success!');
-      }
-    });
-  });
-}
-
-function getData($, cb) {
+function getData(topic_id, $) {
 
   var topic = new Topic();
-  topic.topic_id = /topic\/(\w+)\/$/.exec(options.url)[1];
+  topic.topic_id = topic_id;
 
   var $root = $('.article');
   var $title = $('.tablecc', $root);
@@ -85,13 +51,36 @@ function getData($, cb) {
   topic.reply_count = $reply.length;
   topic.last_reply_at = new Date($('.pubtime', $reply[$reply.length - 1]).text());
 
-  topic.save(function (err) {
-    if (err) {
-      cb && cb(err);
-    } else {
-      cb && cb();
-    }
-  });
+  topic.save();
 }
 
-module.exports = fetchDetail;
+/**
+ * 爬取详情页并存到数据库里面
+ * @params: {url: url,headers:headers}
+ * @return: null，数据直接存到数据库里面
+ */
+module.exports = function (opt, callback) {
+  var options = {
+    method: 'GET',
+    url: opt.url,
+    headers: {
+      'cache-control': 'no-cache',
+      'http-only': true,
+      'user-agent': userAgent
+    }
+  };
+  opt.headers && (options.headers = opt.headers);
+  request(options, function (error, response, body) {
+    if (error) {
+      callback(error);
+    } else {
+      var $ = cheerio.load(body, {
+        normalizeWhitespace: true,
+        decodeEntities: false
+      });
+      var topic_id = /topic\/(\w+)\/$/.exec(options.url)[1];
+      getData(topic_id, $);
+      callback(null);
+    }
+  });
+};
