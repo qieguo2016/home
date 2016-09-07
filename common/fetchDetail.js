@@ -23,7 +23,7 @@ var Topic = models.Topic;
 
 // url: 'https://www.douban.com/group/topic/90144149/',
 
-function getData(topic_id, $) {
+function saveData(topic_id, $) {
 
   var topic = new Topic();
   topic.topic_id = topic_id;
@@ -79,7 +79,7 @@ module.exports = function (opt, callback) {
         decodeEntities: false
       });
       var topic_id = /topic\/(\w+)\/$/.exec(options.url)[1];
-      getData(topic_id, $);
+      saveData(topic_id, $);
       callback(null);
     }
   });

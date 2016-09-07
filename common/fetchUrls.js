@@ -9,44 +9,57 @@ var cheerio = require("cheerio");
 var async = require('async');
 var userAgent = require('./spider.config.js').userAgent.win;
 
+var models = require('./../models/index');
+var TopicTitle = models.TopicTitle;
+
 // 爬帖子title、href、lastmodified
 var concurrencyCount = 0;
-function fetchUrl(opt, callback, ago) {
+function fetchUrl(opt, callback) {
   concurrencyCount++;
   console.log('现在的并发数是', concurrencyCount, '，正在抓取的是', opt.url);
-  ago = ago || 604800000;      // 604800000 = 7 days
   request(opt, function (error, response, body) {
     if (error) {
-      throw new Error(error);
+      return callback(error);
     }
     var $ = cheerio.load(body, {
       normalizeWhitespace: true,
       decodeEntities: false
     });
-    var items = [];
-    var year = new Date().getFullYear();
-    var isStop = false;
-    $('.olt tr').slice(1).each(function (index, el) {
-      var lastTime = $('.time', el).text();
-      if (Date.now() - new Date(year + '-' + lastTime) > ago) {
-        isStop = true;
-        return false;
-      }
-      var $item = $('.title > a', el);
-      items.push({
-        title: $item.attr('title'),
-        href: $item.attr('href'),
-        lastTime: lastTime
-      });
-    });
-    if (isStop) {
-      callback('error: too long ago', items);
-    } else {
-      concurrencyCount--;
-      console.log('fetch url success,', opt.url);
-      callback(null, items);
-    }
+    saveDataSet($);
+    concurrencyCount--;
+    console.log('fetch url success,', opt.url);
+    callback();
   });
+}
+
+// 保存数据
+function saveDataSet($) {
+  var items = [];
+  var year = new Date().getFullYear() + '-';
+  $('.olt tr').slice(1).each(function (index, el) {
+    var $item = $('.title > a', el);
+    var $author = $('td', el).eq(1).children();
+    var topicId = /topic\/(\w+)\/$/.exec($item.attr('href'));
+    var authorId = /people\/(\w+)\/$/.exec($author.attr('href'));
+    items.push({
+      title: $item.attr('title'),
+      topic_id: topicId ? topicId[1] : $item.attr('href'),
+      author: {
+        id: authorId ? authorId[1] : $author.attr('href'),
+        name: $author.text()
+      },
+      reply_count: $('td', el).eq(2).text(),
+      last_reply_at: new Date(year + $('.time', el).text()),
+      tags: []
+    });
+  });
+
+  TopicTitle.create(items, function (err) {
+    if (err) {
+      return console.log(err);
+    }
+    // saved!
+  })
 }
 
 /**
@@ -101,21 +114,16 @@ function checkExcludeWords(str, words) {
  * @params: baseUrls:[], num: 请求数, daysAgo: 在此之前的数据不爬
  * @return: 爬取的结果
  * */
-module.exports = function (baseUrls, num, cb, daysAgo) {
+module.exports = function (baseUrls, num, cb) {
   var opts = initRequestOpt(baseUrls, num);
-  var ago = daysAgo && daysAgo * 1000 * 60 * 60 * 24;
-  async.mapLimit(opts, 5, function (opt, callback) {
-    fetchUrl(opt, callback, ago);
-  }, function (err, results) {
-    results = results.reduce(function (pre, next) {
-      return pre.concat(next);
-    });
+  async.eachLimit(opts, 5, function (opt, callback) {
+    fetchUrl(opt, callback);
+  }, function (err) {
     if (err) {
       console.log('fetchUrl Error: ', err);
-      return cb(err, results);
+      return cb(err);
     }
-    console.log(results);
-    console.log('finish! data number:  ', results.length);
-    cb(null, results);
+    console.log('finish fetchUrl!');
+    cb(null);
   });
 };

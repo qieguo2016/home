@@ -5,9 +5,9 @@
 'use strict';
 
 var async = require('async');
-
 var fetchUrls = require('./common/fetchUrls');
 var fetchDetail = require('./common/fetchDetail');
+var logger = require('./common/logger');
 
 var urls = [
   'https://www.douban.com/group/106955/discussion',
@@ -20,17 +20,21 @@ var urls = [
 
 
 function fetchData() {
-  fetchUrls(urls, 5, function (err, UrlOpts) {
-    async.eachLimit(UrlOpts, 5, function (opt, callback) {
-      console.log('fetchDetail of ' + opt.href);
-      fetchDetail({url: opt.href}, callback);
-    }, function (err) {
-      console.error('error: ', err);
-    });
+  fetchUrls(urls, 5, function (err) {
+    if (err) {
+      return console.log('------ end ------', err);
+    }
+    console.log('------ end ------');
+    // async.eachLimit(UrlOpts, 5, function (opt, callback) {
+    //   console.log('fetchDetail of ' + opt.href);
+    //   fetchDetail({url: opt.href}, callback);
+    // }, function (err) {
+    //   console.error('error: ', err);
+    // });
   });
 }
 
 fetchData();
 
-module.exports = fetchData;
+// module.exports = fetchData;
 
